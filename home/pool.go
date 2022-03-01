@@ -9,22 +9,20 @@ import (
 	"github.com/karastift/marta-server/world"
 )
 
-// types of requests:
-// a login in request
-// a response (i hope i dont have to handle them in pool)
-
 type Pool struct {
+	Port     int
 	Running  bool
 	Pausing  bool
 	listener net.Listener
 	pClients *world.Clients
 }
 
-func NewPool(pClients *world.Clients) *Pool {
+func NewPool(pClients *world.Clients, port int) *Pool {
 	pool := Pool{
 		Running:  false,
 		Pausing:  false,
 		pClients: pClients,
+		Port:     port,
 	}
 
 	return &pool
@@ -33,7 +31,7 @@ func NewPool(pClients *world.Clients) *Pool {
 func (pool *Pool) Start() {
 	pool.Running = true
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", world.ClientPort))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", pool.Port))
 	pool.listener = listener
 
 	// check if initiating the listener failed
@@ -72,7 +70,7 @@ func (pool *Pool) Start() {
 
 				fmt.Println("Found a new client.")
 
-				client.Send([]byte("marta logged in\n"))
+				client.Send("marta logged in\n")
 
 			} else {
 				fmt.Println("Received in pool: '" + netData + "'")
