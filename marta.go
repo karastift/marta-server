@@ -3,6 +3,10 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+
 	"github.com/karastift/marta-server/home"
 	"github.com/karastift/marta-server/world"
 )
@@ -13,6 +17,19 @@ func main() {
 
 	pool := home.NewPool(clients, 2222)
 
-	pool.Start()
+	go pool.Start()
 
+	testResponses()
+}
+
+func testResponses() {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		in, _ := reader.ReadString('\n')
+
+		res := clients.SendWithRes(in)
+
+		fmt.Println(res)
+	}
 }
