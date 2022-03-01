@@ -15,6 +15,7 @@ import (
 
 type Pool struct {
 	Running  bool
+	Pausing  bool
 	listener net.Listener
 	pClients *world.Clients
 }
@@ -22,6 +23,7 @@ type Pool struct {
 func NewPool(pClients *world.Clients) *Pool {
 	pool := Pool{
 		Running:  false,
+		Pausing:  false,
 		pClients: pClients,
 	}
 
@@ -43,7 +45,9 @@ func (pool *Pool) Start() {
 
 	// main loop to check of incoming connections
 	for {
-
+		if pool.Pausing {
+			continue
+		}
 		// accepting an incoming connection
 		conn, err := listener.Accept()
 
@@ -71,7 +75,7 @@ func (pool *Pool) Start() {
 				client.Send([]byte("marta logged in\n"))
 
 			} else {
-				fmt.Println("'" + netData + "'")
+				fmt.Println("Received in pool: '" + netData + "'")
 			}
 		}
 	}
@@ -86,4 +90,12 @@ func (pool *Pool) Stop() {
 	}
 
 	pool.Running = false
+}
+
+func (pool *Pool) Pause() {
+	pool.Pausing = true
+}
+
+func (pool *Pool) Resume() {
+	pool.Pausing = false
 }
