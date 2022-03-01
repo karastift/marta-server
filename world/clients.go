@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -52,6 +53,9 @@ func (clients *Clients) Send(data string) []string {
 			// decrement waitgroup counter
 			defer wg.Done()
 			// send and get response
+
+			fmt.Println("Sending to: " + curr.String())
+
 			res, err := curr.Send([]byte(data))
 
 			if err != nil {

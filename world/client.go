@@ -29,8 +29,6 @@ func NewClient(conn net.Conn) *Client {
 
 func (client *Client) Send(data []byte) ([]byte, error) {
 
-	// TODO: fix this method whatever is responsable for the not receiving a response from the client
-
 	// send data
 	client.Conn.Write(data)
 
@@ -57,5 +55,5 @@ func (client *Client) UpdateTime() {
 }
 
 func (client *Client) String() string {
-	return fmt.Sprintf("Client(Port: %d, LastActive: %s, Conn: [not printable])", client.Port, client.LastActive.String())
+	return fmt.Sprintf("Client(%s)", client.Conn.LocalAddr())
 }
