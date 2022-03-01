@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"os"
 
 	"github.com/karastift/marta-server/world"
 )
@@ -17,10 +16,10 @@ type Pool struct {
 	pClients *world.Clients
 }
 
+// Returns pointer to an instance of Pool.
 func NewPool(pClients *world.Clients, port int) *Pool {
 	pool := Pool{
 		Running:  false,
-		Pausing:  false,
 		pClients: pClients,
 		Port:     port,
 	}
@@ -28,7 +27,8 @@ func NewPool(pClients *world.Clients, port int) *Pool {
 	return &pool
 }
 
-func (pool *Pool) Start() {
+// Starts the pool. Pool listens now to incoming tcp connections and adds new clients to pClients.
+func (pool *Pool) Start() error {
 	pool.Running = true
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", pool.Port))
@@ -36,21 +36,16 @@ func (pool *Pool) Start() {
 
 	// check if initiating the listener failed
 	if err != nil {
-		fmt.Println("Failed initiating the listener.")
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 
 	// main loop to check of incoming connections
 	for {
-		if pool.Pausing {
-			continue
-		}
 		// accepting an incoming connection
 		conn, err := listener.Accept()
 
+		// if accepting the connection failes, just ignore it
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 
@@ -59,18 +54,20 @@ func (pool *Pool) Start() {
 
 		// if reading the incoming data failes, just ignore the connection
 		if err != nil {
-			fmt.Println(err)
 			continue
+
 		} else {
 			// a client wants to login
 			// append client to clients
 			if netData == "marta login\n" {
-				client := world.NewClient(conn)
-				pool.pClients.AddClient(*client)
 
-				fmt.Println("Found a new client.")
+				client := world.NewClient(conn)
 
 				client.Send("marta logged in\n")
+
+				pool.pClients.AddClient(*client)
+
+				Log("Client connected: " + client.String())
 
 			} else {
 				fmt.Println("Received in pool: '" + netData + "'")
@@ -79,21 +76,13 @@ func (pool *Pool) Start() {
 	}
 }
 
-func (pool *Pool) Stop() {
+// Stop the pool.
+func (pool *Pool) Stop() error {
 	err := pool.listener.Close()
+	pool.Running = false
 
 	if err != nil {
-		fmt.Println("Failed to close listener.")
-		fmt.Println(err)
+		return err
 	}
-
-	pool.Running = false
-}
-
-func (pool *Pool) Pause() {
-	pool.Pausing = true
-}
-
-func (pool *Pool) Resume() {
-	pool.Pausing = false
+	return nil
 }

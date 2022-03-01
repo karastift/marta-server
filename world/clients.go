@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -9,6 +8,7 @@ type Clients struct {
 	ClientsArray []Client
 }
 
+// Returns pointer to an instance of Clients.
 func NewClients() *Clients {
 	clients := Clients{
 		ClientsArray: make([]Client, 0),
@@ -17,10 +17,12 @@ func NewClients() *Clients {
 	return &clients
 }
 
+// Adds `newClient` to the `ClientsArray`.
 func (clients *Clients) AddClient(newClient Client) {
 	clients.ClientsArray = append(clients.ClientsArray, newClient)
 }
 
+// Removes `toRemove` (instance of Client) of `ClientsArray`.
 func (clients *Clients) RemoveClient(toRemove Client) {
 
 	var removeIndex int
@@ -35,9 +37,10 @@ func (clients *Clients) RemoveClient(toRemove Client) {
 	clients.ClientsArray = append(clients.ClientsArray[:removeIndex], clients.ClientsArray[removeIndex+1:]...)
 }
 
+// Send data to all clients without waiting for any response.
 func (clients *Clients) Send(data string) {
 
-	// waitgroup for waiting until the last client reponded or timed out
+	// waitgroup for waiting until data is sent to all clients
 	var wg sync.WaitGroup
 
 	for _, client := range clients.ClientsArray {
@@ -50,8 +53,7 @@ func (clients *Clients) Send(data string) {
 			// decrement waitgroup counter
 			defer wg.Done()
 
-			fmt.Println("Sending to: " + curr.String())
-
+			// send without waiting for response
 			err := curr.Send(data)
 
 			if err != nil {
@@ -65,6 +67,11 @@ func (clients *Clients) Send(data string) {
 	}
 }
 
+// Send data to all clients and wait for response.
+//
+// Uses the `Send(string)` method of `Client`. This results in increasing the `TimeoutCount` of a client if it doesnt repond.
+//
+// After the data got sent to a client the method checks if `TimeoutCount` is bigger than 4 and if it is, the client gets removed from `ClientsArray`.
 func (clients *Clients) SendWithRes(data string) []string {
 
 	// array that gatheres all responses
@@ -80,12 +87,11 @@ func (clients *Clients) SendWithRes(data string) []string {
 
 		// start goroutine to send to clients concurrently
 		go func(curr Client) {
+
 			// decrement waitgroup counter
 			defer wg.Done()
+
 			// send and get response
-
-			fmt.Println("Sending to: " + curr.String())
-
 			res, err := curr.SendWithRes(data)
 
 			if err != nil {
