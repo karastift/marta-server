@@ -7,47 +7,39 @@ import (
 	"time"
 )
 
-const ClientPort = 2222
-
 type Client struct {
 	Conn         net.Conn
 	LastActive   time.Time
-	Port         int
 	TimeoutCount int
 }
 
 func NewClient(conn net.Conn) *Client {
 	client := Client{
-		Conn:         conn,
-		LastActive:   time.Now(),
-		Port:         ClientPort,
-		TimeoutCount: 0,
+		Conn:       conn,
+		LastActive: time.Now(),
 	}
 
 	return &client
 }
 
-func (client *Client) Send(data []byte) ([]byte, error) {
+func (client *Client) Send(data string) error {
 
-	// send data
-	client.Conn.Write(data)
+	_, err := client.Conn.Write([]byte(data))
 
-	// set deadline to 5 seconds
-	// so the server doesnt halt
-	client.Conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	return err
+}
 
-	// read response until newline
-	responseData, err := bufio.NewReader(client.Conn).ReadBytes('\n')
+func (client *Client) SendWithRes(data string) (string, error) {
 
-	if err != nil {
-		client.TimeoutCount++
-	}
+	client.Conn.Write([]byte(data))
 
-	return responseData, err
+	res, err := bufio.NewReader(client.Conn).ReadString('\n')
+
+	return res, err
 }
 
 func (client *Client) Equals(other Client) bool {
-	return client.Conn.RemoteAddr() == other.Conn.RemoteAddr()
+	return client.Conn.LocalAddr() == other.Conn.LocalAddr()
 }
 
 func (client *Client) UpdateTime() {
