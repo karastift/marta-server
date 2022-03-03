@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/karastift/marta-server/world"
 )
@@ -59,9 +60,18 @@ func (pool *Pool) Start() error {
 		} else {
 			// a client wants to login
 			// append client to clients
-			if netData == "marta login\n" {
+			if strings.HasPrefix(netData, "marta login|") {
 
 				client := world.NewClient(conn)
+
+				clientInfo, err := world.NewClientInfo(strings.TrimPrefix(netData, "marta login|"))
+
+				if err != nil {
+					Log("Invalid login message.")
+					continue
+				}
+
+				client.Info = *clientInfo
 
 				client.Send("marta logged in\n")
 
@@ -70,7 +80,7 @@ func (pool *Pool) Start() error {
 				Log("Client connected: " + client.String())
 
 			} else {
-				fmt.Println("Received in pool: '" + netData + "'")
+				Log("Received in pool: '" + netData + "'")
 			}
 		}
 	}
