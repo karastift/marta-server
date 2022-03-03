@@ -5,14 +5,13 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strings"
-
-	"github.com/karastift/marta-server/home"
-	"github.com/karastift/marta-server/world"
 )
 
-var clients = world.NewClients()
+var clients = NewClients()
+var logger *log.Logger
 
 func main() {
 
@@ -22,14 +21,13 @@ func main() {
 	// check out ghw in general
 	// get right macaddress
 
-	// use real logging package "log"
-
 	// shell access (could be hard)
 	// file download (could be hard)
-	// client sends info with login command
 	// maybe update command (could be hard)
 
-	pool := home.NewPool(clients, 2222)
+	logger = log.Default()
+
+	pool := NewPool(clients, 2222)
 
 	go pool.Start()
 
