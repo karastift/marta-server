@@ -1,12 +1,10 @@
-package home
+package main
 
 import (
 	"bufio"
 	"fmt"
 	"net"
 	"strings"
-
-	"github.com/karastift/marta-server/world"
 )
 
 type Pool struct {
@@ -14,11 +12,11 @@ type Pool struct {
 	Running  bool
 	Pausing  bool
 	listener net.Listener
-	pClients *world.Clients
+	pClients *Clients
 }
 
 // Returns pointer to an instance of Pool.
-func NewPool(pClients *world.Clients, port int) *Pool {
+func NewPool(pClients *Clients, port int) *Pool {
 	pool := Pool{
 		Running:  false,
 		pClients: pClients,
@@ -62,12 +60,12 @@ func (pool *Pool) Start() error {
 			// append client to clients
 			if strings.HasPrefix(netData, "marta login|") {
 
-				client := world.NewClient(conn)
+				client := NewClient(conn)
 
-				clientInfo, err := world.NewClientInfo(strings.TrimPrefix(netData, "marta login|"))
+				clientInfo, err := NewClientInfo(strings.TrimPrefix(netData, "marta login|"))
 
 				if err != nil {
-					Log("Invalid login message.")
+					logger.Println("Invalid login message.")
 					continue
 				}
 
@@ -77,10 +75,10 @@ func (pool *Pool) Start() error {
 
 				pool.pClients.AddClient(*client)
 
-				Log("Client connected: " + client.String())
+				logger.Println("Client connected: " + client.String())
 
 			} else {
-				Log("Received in pool: '" + netData + "'")
+				logger.Println("Received in pool: '" + netData + "'")
 			}
 		}
 	}
