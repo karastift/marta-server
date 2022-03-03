@@ -10,6 +10,7 @@ import (
 type Client struct {
 	Conn         net.Conn
 	TimeoutCount int
+	Info         ClientInfo
 }
 
 // Returns a pointer to an instance of Client.
@@ -42,11 +43,31 @@ func (client *Client) SendWithRes(data string) (string, error) {
 
 	res, err := bufio.NewReader(client.Conn).ReadString('\n')
 
+	// TODO: idk why, but the timeoutcount stays on one
 	if err != nil {
-		client.TimeoutCount++
+		client.TimeoutCount = client.TimeoutCount + 1
 	}
 
 	return res, err
+}
+
+// Requests info from client. Updates `Info` and returns it.
+func (client *Client) RequestInfo() (*ClientInfo, error) {
+	res, err := client.SendWithRes("!info\n")
+
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := NewClientInfo(res)
+
+	if err != nil {
+		return nil, err
+	}
+
+	client.Info = *info
+
+	return info, nil
 }
 
 // Checks if client is equal to the other based on there local address.
