@@ -74,9 +74,16 @@ func (client *Client) RequestInfo() (*ClientInfo, error) {
 	return info, nil
 }
 
+// Ping the client. Returns true if client responded.
+func (client *Client) Ping() bool {
+	res, err := client.SendWithRes("!ping\n")
+
+	return err == nil && res == "pong\n"
+}
+
 // Checks if client is equal to the other based on there local address.
 func (client *Client) Equals(other Client) bool {
-	return client.Conn.LocalAddr() == other.Conn.LocalAddr()
+	return client.Id == other.Id && client.Conn.LocalAddr() == other.Conn.LocalAddr()
 }
 
 // Returns string representation of itsself.

@@ -33,6 +33,17 @@ func (clients *Clients) GetClientById(id string) (*Client, error) {
 	}
 }
 
+// Returns array of clients.
+func (clients *Clients) GetAllClients() []Client {
+	arr := make([]Client, 0, len(clients.clientsMap))
+
+	for _, client := range clients.clientsMap {
+		arr = append(arr, client)
+	}
+
+	return arr
+}
+
 // Adds `newClient` to the `ClientsArray`.
 func (clients *Clients) AddClient(newClient Client) {
 	clients.clientsMap[newClient.Id] = newClient
@@ -41,6 +52,21 @@ func (clients *Clients) AddClient(newClient Client) {
 // Removes `toRemove` (instance of Client) of `ClientsArray`.
 func (clients *Clients) RemoveClient(toRemove Client) {
 	delete(clients.clientsMap, toRemove.Id)
+}
+
+// Pings all clients and returns map: client -> ok
+func (clients *Clients) Ping() map[Client]bool {
+
+	oks := map[Client]bool{}
+
+	mapWithWaitGroup(&clients.clientsMap, func(curr *Client, wg *sync.WaitGroup) {
+		// decrement waitgroup counter
+		defer wg.Done()
+
+		oks[*curr] = curr.Ping()
+	})
+
+	return oks
 }
 
 // Send data to all clients without waiting for any response.

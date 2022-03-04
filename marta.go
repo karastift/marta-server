@@ -110,6 +110,40 @@ func shell(clientId string) error {
 	return nil
 }
 
+// Ping the client with clientId or if clientId == "", ping all connected clients.
+func ping(clientId string) error {
+
+	// user wants to ping a specific client
+	if len(clientId) == 0 {
+		oks := clients.Ping()
+
+		for client, ok := range oks {
+			if ok {
+				fmt.Printf("%s responded.\n", client.String())
+			} else {
+				fmt.Printf("%s did not respond or responded the wrong message.\n", client.String())
+			}
+		}
+
+	} else {
+		client, err := clients.GetClientById(clientId)
+
+		if err != nil {
+			return errors.New("could not ping client: client with that id is not in array")
+		}
+
+		ok := client.Ping()
+
+		if ok {
+			fmt.Printf("%s responded.\n", client.String())
+		} else {
+			fmt.Printf("%s did not respond or responded the wrong message.\n", client.String())
+		}
+	}
+
+	return nil
+}
+
 func commandLoop() {
 	reader := bufio.NewReader(os.Stdin)
 	ctrlDCount := 0
@@ -156,6 +190,11 @@ func commandLoop() {
 			}
 		case "!shell":
 			err := shell(clientId)
+			if err != nil {
+				fmt.Println(err)
+			}
+		case "!ping":
+			err := ping(clientId)
 			if err != nil {
 				fmt.Println(err)
 			}
