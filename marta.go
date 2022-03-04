@@ -85,7 +85,11 @@ func shell(clientId string) error {
 
 	shell := NewShell(client)
 
-	shell.Start()
+	err = shell.Start()
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

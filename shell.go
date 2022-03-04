@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -25,14 +26,17 @@ func NewShell(client *Client) *Shell {
 }
 
 // Starts a shell in a while loop. Can be exited with Ctrl + D or `exit` command.
-func (shell *Shell) Start() {
+func (shell *Shell) Start() error {
 	reader := bufio.NewReader(os.Stdin)
 
 	// initialize shell
-	shell.init()
+	err := shell.init()
+
+	if err != nil {
+		return err
+	}
 
 	for {
-
 		shell.promt()
 
 		in, err := reader.ReadString('\n')
@@ -45,7 +49,6 @@ func (shell *Shell) Start() {
 		out, err := shell.exec(in)
 
 		if err != nil {
-			fmt.Println("err")
 			fmt.Println(err)
 			continue
 		}
@@ -55,6 +58,8 @@ func (shell *Shell) Start() {
 
 	shell.Close()
 	fmt.Println()
+
+	return nil
 }
 
 func (shell *Shell) Close() {
@@ -62,14 +67,31 @@ func (shell *Shell) Close() {
 }
 
 // Finds out the current path on the client and sets it.
-func (shell *Shell) init() {
-	res, _ := shell.Client.SendWithRes("!initshell\n")
+func (shell *Shell) init() error {
+	res, err := shell.Client.SendWithRes("!initshell\n")
 
-	decoded, _ := base64.StdEncoding.DecodeString(res)
+	// client did not respond in time
+	if err != nil {
+		return err
+	}
 
-	_, wd := seperateOutAndWd(string(decoded))
+	decoded, err := base64.StdEncoding.DecodeString(res)
+
+	// response of client is malformed
+	if err != nil {
+		return err
+	}
+
+	_, wd, err := seperateOutAndWd(string(decoded))
+
+	// response of client is malformed
+	if err != nil {
+		return err
+	}
 
 	shell.currDir = wd
+
+	return nil
 }
 
 func (shell *Shell) promt() {
@@ -93,7 +115,15 @@ func (shell *Shell) exec(raw string) ([]byte, error) {
 
 	decoded, err := base64.StdEncoding.DecodeString(res)
 
-	out, wd := seperateOutAndWd(string(decoded))
+	if err != nil {
+		return nil, errors.New("could not decode response")
+	}
+
+	out, wd, err := seperateOutAndWd(string(decoded))
+
+	if err != nil {
+		return nil, err
+	}
 
 	shell.currDir = wd
 
@@ -105,9 +135,14 @@ func (shell *Shell) pwd() (pwd string) {
 	return shell.currDir
 }
 
-func seperateOutAndWd(data string) (out string, wd string) {
+// Seperates the output from the working directory and returns both.
+func seperateOutAndWd(data string) (string, string, error) {
 
 	split := strings.Split(data, Delimiter)
 
-	return split[0], split[1]
+	if len(split) != 2 {
+		return "", "", errors.New("could not seperate output from working directory")
+	}
+
+	return split[0], split[1], nil
 }
