@@ -16,13 +16,29 @@ var logger *log.Logger
 
 func main() {
 
-	logger = log.Default()
+	f := initLogger()
+	defer f.Close()
 
 	pool := NewPool(clients, 2222)
 
 	go pool.Start()
 
 	commandLoop()
+}
+
+// Initializes the logger. Returns the filedecriptor so the main function can close it when it finishes.
+func initLogger() *os.File {
+
+	f, err := os.OpenFile("marta.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		logger.Fatalf("error opening file: %v", err)
+	}
+
+	logger = log.Default()
+
+	logger.SetOutput(f)
+
+	return f
 }
 
 func info(clientId string) error {
