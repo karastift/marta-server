@@ -16,6 +16,9 @@ var logger *log.Logger
 
 func main() {
 
+	// replace == with strings.Compare
+	// find out why comparison does not work
+
 	f := initLogger()
 	defer f.Close()
 
