@@ -14,12 +14,14 @@ const Delimiter string = "#+2%&"
 type Shell struct {
 	Client  *Client
 	currDir string
+	running bool
 }
 
 func NewShell(client *Client) *Shell {
 
 	shell := Shell{
-		Client: client,
+		Client:  client,
+		running: false,
 	}
 
 	return &shell
@@ -36,14 +38,17 @@ func (shell *Shell) Start() error {
 		return err
 	}
 
-	for {
+	shell.running = true
+
+	for shell.running {
 		shell.promt()
 
 		in, err := reader.ReadString('\n')
 
 		// Ctrl + D was pressed -> user wants to leave the shell
 		if err != nil {
-			break
+			shell.running = false
+			fmt.Println()
 		}
 
 		out, err := shell.exec(in)
@@ -57,7 +62,6 @@ func (shell *Shell) Start() error {
 	}
 
 	shell.Close()
-	fmt.Println()
 
 	return nil
 }
@@ -104,16 +108,16 @@ func (shell *Shell) exec(raw string) ([]byte, error) {
 	raw = strings.TrimSpace(raw)
 	split := strings.Split(raw, " ")
 
-	if raw == "" {
+	if len(raw) == 0 {
 		return []byte{}, nil
 	}
 
 	program := split[0]
 
-	if strings.Compare(program, "pwd\n") == 0 {
+	if program == "pwd" {
 		return []byte(shell.pwd()), nil
-	} else if strings.Compare(program, "exit\n") == 0 {
-		shell.Close()
+	} else if program == "exit" {
+		shell.running = false
 		return []byte{}, nil
 	}
 
