@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const timeOutDuration int = 5
+
 type Client struct {
 	Id           string
 	Conn         net.Conn
@@ -42,7 +44,7 @@ func (client *Client) SendWithRes(data string) (string, error) {
 
 	// set deadline to in 5 seconds
 	// if client does not respond after 5 seconds, it resumes and the timeout counter get incremented
-	client.Conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	client.Conn.SetReadDeadline(time.Now().Add(time.Duration(timeOutDuration) * time.Second))
 
 	res, err := bufio.NewReader(client.Conn).ReadString('\n')
 
