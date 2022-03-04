@@ -104,10 +104,17 @@ func (shell *Shell) exec(raw string) ([]byte, error) {
 	raw = strings.TrimSpace(raw)
 	split := strings.Split(raw, " ")
 
+	if raw == "" {
+		return []byte{}, nil
+	}
+
 	program := split[0]
 
-	if program == "pwd\n" {
+	if strings.Compare(program, "pwd\n") == 0 {
 		return []byte(shell.pwd()), nil
+	} else if strings.Compare(program, "exit\n") == 0 {
+		shell.Close()
+		return []byte{}, nil
 	}
 
 	// send to client and get response
