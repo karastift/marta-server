@@ -38,7 +38,6 @@ func (shell *Shell) Start() {
 		in, err := reader.ReadString('\n')
 
 		// Ctrl + D was pressed -> user wants to leave the shell
-		// TODO: logic to close the shell
 		if err != nil {
 			break
 		}
@@ -73,7 +72,6 @@ func (shell *Shell) init() {
 	shell.currDir = wd
 }
 
-// TODO: research word for 'base'
 func (shell *Shell) promt() {
 	fmt.Printf("%s $ ", shell.pwd())
 }

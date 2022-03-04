@@ -46,7 +46,6 @@ func (client *Client) SendWithRes(data string) (string, error) {
 
 	res, err := bufio.NewReader(client.Conn).ReadString('\n')
 
-	// TODO: idk why, but the timeoutcount stays on one
 	if err != nil {
 		client.TimeoutCount = client.TimeoutCount + 1
 	}

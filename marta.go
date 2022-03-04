@@ -17,17 +17,9 @@ var logger *log.Logger
 func main() {
 
 	// TODO:
-	// status command on server
-	// check out memory modules on ghw
-	// check out ghw in general
 	// use map for storing clients later (id -> client)
 	// handle all errors on server
 	// a client can crash, the server shouldnt
-
-	// search for TODO:
-
-	// file download (could be hard)
-	// maybe update command (could be hard)
 
 	logger = log.Default()
 
