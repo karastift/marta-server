@@ -84,7 +84,7 @@ func (client *Client) String() string {
 
 // Returns a random string with the given length.
 func randStringBytes(n int) string {
-	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	b := make([]byte, n)
 	for i := range b {

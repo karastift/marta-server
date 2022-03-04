@@ -65,7 +65,7 @@ func (pool *Pool) Start() error {
 				clientInfo, err := NewClientInfo(strings.TrimPrefix(netData, "marta login|"))
 
 				if err != nil {
-					logger.Println("Invalid login message.")
+					logger.Println(fmt.Sprintf("Invalid login message: '%s'", netData))
 					continue
 				}
 
@@ -78,7 +78,7 @@ func (pool *Pool) Start() error {
 				logger.Println("Client connected: " + client.String())
 
 			} else {
-				logger.Println("Received in pool: '" + netData + "'")
+				logger.Println("Received in pool (should not happen): '" + netData + "'")
 			}
 		}
 	}
@@ -89,8 +89,5 @@ func (pool *Pool) Stop() error {
 	err := pool.listener.Close()
 	pool.Running = false
 
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
