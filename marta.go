@@ -16,9 +16,6 @@ var logger *log.Logger
 
 func main() {
 
-	// replace == with strings.Compare
-	// find out why comparison does not work
-
 	f := initLogger()
 	defer f.Close()
 
@@ -75,7 +72,7 @@ func list() {
 
 func kick(clientId string) error {
 
-	if clientId == "" {
+	if len(clientId) == 0 {
 		return errors.New("could not kick client: client id was not passed")
 	}
 
@@ -92,8 +89,8 @@ func kick(clientId string) error {
 
 func shell(clientId string) error {
 
-	if clientId == "" {
-		return errors.New("could not initiate shell: client id was not passed")
+	if len(clientId) == 0 {
+		return errors.New("could not kick client: client id was not passed")
 	}
 
 	client, err := clients.GetClientById(clientId)
@@ -140,6 +137,10 @@ func commandLoop() {
 			clientId = split[1]
 		}
 
+		if len(in) == 0 {
+			continue
+		}
+
 		switch cmd {
 		case "!info":
 			err := info(clientId)
@@ -167,28 +168,3 @@ func commandLoop() {
 		}
 	}
 }
-
-// func testResponses() {
-// 	reader := bufio.NewReader(os.Stdin)
-
-// 	for {
-// 		fmt.Print("> ")
-
-// 		in, _ := reader.ReadString('\n')
-
-// 		if in == "!info\n" {
-// 			info()
-// 			continue
-// 		}
-
-// 		responses := clients.SendWithRes(in)
-
-// 		for _, res := range responses {
-// 			fmt.Println("'" + strings.TrimRight(res, "\n") + "'")
-// 		}
-
-// 		for _, client := range clients.ClientsArray {
-// 			fmt.Println(client.Conn.RemoteAddr())
-// 		}
-// 	}
-// }
