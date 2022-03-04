@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -15,6 +16,17 @@ func NewClients() *Clients {
 	}
 
 	return &clients
+}
+
+// Returns client with curresponding id.
+func (clients *Clients) GetClientById(id string) (*Client, error) {
+	for _, client := range clients.ClientsArray {
+		if client.Id == id {
+			return &client, nil
+		}
+	}
+
+	return nil, errors.New("could not find client: no id matches the given one")
 }
 
 // Adds `newClient` to the `ClientsArray`.
