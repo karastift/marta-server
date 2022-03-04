@@ -16,11 +16,6 @@ var logger *log.Logger
 
 func main() {
 
-	// TODO:
-	// use map for storing clients later (id -> client)
-	// handle all errors on server
-	// a client can crash, the server shouldnt
-
 	logger = log.Default()
 
 	pool := NewPool(clients, 2222)
@@ -45,7 +40,7 @@ func info(clientId string) error {
 	} else {
 		clients.RequestInfo()
 
-		for _, client := range clients.ClientsArray {
+		for _, client := range clients.clientsMap {
 			fmt.Println(client.Info.String())
 		}
 	}
@@ -54,9 +49,26 @@ func info(clientId string) error {
 }
 
 func list() {
-	for _, client := range clients.ClientsArray {
+	for _, client := range clients.clientsMap {
 		fmt.Println(client.String())
 	}
+}
+
+func kick(clientId string) error {
+
+	if clientId == "" {
+		return errors.New("could not kick client: client id was not passed")
+	}
+
+	client, err := clients.GetClientById(clientId)
+
+	if err != nil {
+		return err
+	}
+
+	clients.RemoveClient(*client)
+
+	return nil
 }
 
 func shell(clientId string) error {
@@ -113,6 +125,11 @@ func commandLoop() {
 			}
 		case "!list":
 			list()
+		case "!kick":
+			err := kick(clientId)
+			if err != nil {
+				fmt.Println(err)
+			}
 		case "!shell":
 			err := shell(clientId)
 			if err != nil {
