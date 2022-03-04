@@ -3,11 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"net"
 	"time"
 )
 
 type Client struct {
+	Id           string
 	Conn         net.Conn
 	TimeoutCount int
 	Info         ClientInfo
@@ -16,6 +18,7 @@ type Client struct {
 // Returns a pointer to an instance of Client.
 func NewClient(conn net.Conn) *Client {
 	client := Client{
+		Id:   randStringBytes(5),
 		Conn: conn,
 	}
 
@@ -77,5 +80,16 @@ func (client *Client) Equals(other Client) bool {
 
 // Returns string representation of itsself.
 func (client *Client) String() string {
-	return fmt.Sprintf("Client(%s)", client.Conn.LocalAddr())
+	return fmt.Sprintf("Client(Id: %s, Addr: %s)", client.Id, client.Conn.LocalAddr())
+}
+
+// Returns a random string with the given length.
+func randStringBytes(n int) string {
+	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
