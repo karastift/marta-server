@@ -116,12 +116,32 @@ func ping(clientId string) error {
 	// user wants to ping a specific client
 	if len(clientId) == 0 {
 		oks := clients.Ping()
+		allResponded := true
 
 		for client, ok := range oks {
 			if ok {
 				fmt.Printf("%s responded.\n", client.String())
 			} else {
 				fmt.Printf("%s did not respond or responded the wrong message.\n", client.String())
+				allResponded = false
+			}
+		}
+
+		if !allResponded {
+			fmt.Print("Do you want to remove all inactive clients? (y/N): ")
+
+			reader := bufio.NewReader(os.Stdin)
+			r, s, _ := reader.ReadRune()
+
+			if s == 0 {
+				fmt.Println()
+			} else if r == 'y' {
+				fmt.Println("Removing inactive clients.")
+				for client, ok := range oks {
+					if !ok {
+						clients.RemoveClient(client)
+					}
+				}
 			}
 		}
 
