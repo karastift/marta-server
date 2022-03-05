@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const timeOutDuration int = 5
+const timeOutDuration int = 2
 
 type Client struct {
 	Id           string
