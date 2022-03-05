@@ -12,15 +12,13 @@ type Pool struct {
 	Running  bool
 	Pausing  bool
 	listener net.Listener
-	pClients *Clients
 }
 
 // Returns pointer to an instance of Pool.
-func NewPool(pClients *Clients, port int) *Pool {
+func NewPool(port int) *Pool {
 	pool := Pool{
-		Running:  false,
-		pClients: pClients,
-		Port:     port,
+		Running: false,
+		Port:    port,
 	}
 
 	return &pool
@@ -73,7 +71,7 @@ func (pool *Pool) Start() error {
 
 				client.Send("marta logged in\n")
 
-				pool.pClients.AddClient(*client)
+				clients.AddClient(*client)
 
 				logger.Println("Client connected: " + client.String())
 
