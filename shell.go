@@ -51,7 +51,7 @@ func (shell *Shell) Start() error {
 			fmt.Println()
 		}
 
-		out, err := shell.exec(in)
+		out, err := shell.Exec(in)
 
 		if err != nil {
 			fmt.Println(err)
@@ -103,7 +103,7 @@ func (shell *Shell) promt() {
 }
 
 // Parses and tries to execute the raw string.
-func (shell *Shell) exec(raw string) ([]byte, error) {
+func (shell *Shell) Exec(raw string) ([]byte, error) {
 
 	raw = strings.TrimSpace(raw)
 	split := strings.Split(raw, " ")

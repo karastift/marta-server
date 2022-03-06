@@ -4,18 +4,21 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Pool struct {
-	Port     int
+	Port     string
 	Running  bool
 	Pausing  bool
 	listener net.Listener
 }
 
 // Returns pointer to an instance of Pool.
-func NewPool(port int) *Pool {
+func NewPool(port string) *Pool {
 	pool := Pool{
 		Running: false,
 		Port:    port,
@@ -25,10 +28,13 @@ func NewPool(port int) *Pool {
 }
 
 // Starts the pool. Pool listens now to incoming tcp connections and adds new clients to pClients.
+// Also starts a goroutine that pings every client every `checkClientsDuration` seconds. If they do not respond, they will be removed.
 func (pool *Pool) Start() error {
 	pool.Running = true
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", pool.Port))
+	go pool.checkClients()
+
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", pool.Port))
 	pool.listener = listener
 
 	// check if initiating the listener failed
@@ -79,6 +85,21 @@ func (pool *Pool) Start() error {
 				logger.Println("Received in pool (should not happen): '" + netData + "'")
 			}
 		}
+	}
+}
+
+// Runs forever and pings clients every `checkClientsDuration` seconds.
+func (pool *Pool) checkClients() {
+
+	dur, err := strconv.Atoi(os.Getenv("CHECK_CLIENTS_DURATION"))
+
+	if err != nil {
+		logger.Panicln(err)
+	}
+
+	for {
+		clients.Ping()
+		time.Sleep(time.Duration(dur) * time.Second)
 	}
 }
 

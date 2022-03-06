@@ -9,17 +9,24 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	// loads enviroment variables from .env
+	_ "github.com/joho/godotenv/autoload"
 )
 
 var clients = NewClients()
 var logger *log.Logger
+var out = os.Stdout
+var api *Api = NewApi()
 
 func main() {
 
 	f := initLogger()
 	defer f.Close()
 
-	pool := NewPool(clients, 2222)
+	go api.Serve()
+
+	pool := NewPool(os.Getenv("POOL_PORT"))
 
 	go pool.Start()
 
@@ -29,7 +36,7 @@ func main() {
 // Initializes the logger. Returns the filedecriptor so the main function can close it when it finishes.
 func initLogger() *os.File {
 
-	f, err := os.OpenFile("marta.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile(os.Getenv("LOG_FILE"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		logger.Fatalf("error opening file: %v", err)
 	}
@@ -41,6 +48,7 @@ func initLogger() *os.File {
 	return f
 }
 
+// Get all info about the clients.
 func info(clientId string) error {
 
 	if clientId != "" {
@@ -52,24 +60,26 @@ func info(clientId string) error {
 
 		client.RequestInfo()
 
-		fmt.Println(client.Info.String())
+		fmt.Fprintln(out, client.Info.String())
 	} else {
 		clients.RequestInfo()
 
 		for _, client := range clients.clientsMap {
-			fmt.Println(client.Info.String())
+			fmt.Fprintln(out, client.Info.String())
 		}
 	}
 
 	return nil
 }
 
+// List all connected clients.
 func list() {
 	for _, client := range clients.clientsMap {
-		fmt.Println(client.String())
+		fmt.Fprintln(out, client.String())
 	}
 }
 
+// Kick a client.
 func kick(clientId string) error {
 
 	if len(clientId) == 0 {
@@ -87,6 +97,7 @@ func kick(clientId string) error {
 	return nil
 }
 
+// Start a shell on the command line.
 func shell(clientId string) error {
 
 	if len(clientId) == 0 {
@@ -116,32 +127,12 @@ func ping(clientId string) error {
 	// user wants to ping a specific client
 	if len(clientId) == 0 {
 		oks := clients.Ping()
-		allResponded := true
 
 		for client, ok := range oks {
 			if ok {
-				fmt.Printf("%s responded.\n", client.String())
+				fmt.Fprintf(out, "%s responded.\n", client.String())
 			} else {
-				fmt.Printf("%s did not respond or responded the wrong message.\n", client.String())
-				allResponded = false
-			}
-		}
-
-		if !allResponded {
-			fmt.Print("Do you want to remove all inactive clients? (y/N): ")
-
-			reader := bufio.NewReader(os.Stdin)
-			r, s, _ := reader.ReadRune()
-
-			if s == 0 {
-				fmt.Println()
-			} else if r == 'y' {
-				fmt.Println("Removing inactive clients.")
-				for client, ok := range oks {
-					if !ok {
-						clients.RemoveClient(client)
-					}
-				}
+				fmt.Fprintf(out, "%s did not respond or responded the wrong message.\n", client.String())
 			}
 		}
 
@@ -155,9 +146,9 @@ func ping(clientId string) error {
 		ok := client.Ping()
 
 		if ok {
-			fmt.Printf("%s responded.\n", client.String())
+			fmt.Fprintf(out, "%s responded.\n", client.String())
 		} else {
-			fmt.Printf("%s did not respond or responded the wrong message.\n", client.String())
+			fmt.Fprintf(out, "%s did not respond or responded the wrong message.\n", client.String())
 		}
 	}
 
@@ -219,11 +210,12 @@ func commandLoop() {
 				fmt.Println(err)
 			}
 		default:
-			responses := clients.SendWithRes(in)
+			fmt.Println("Command is unknown.")
+			// responses := clients.SendWithRes(in)
 
-			for _, res := range responses {
-				fmt.Println("'" + strings.TrimRight(res, "\n") + "'")
-			}
+			// for _, res := range responses {
+			// 	fmt.Println("'" + strings.TrimRight(res, "\n") + "'")
+			// }
 		}
 	}
 }
