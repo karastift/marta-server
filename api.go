@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -32,10 +34,74 @@ func (api *Api) Serve() error {
 
 	http.HandleFunc("/ws", wsHandle)
 	http.HandleFunc("/list", listHandle)
+	http.HandleFunc("/kick", kickHandle)
+	http.HandleFunc("/ping", pingHandle)
 
 	logger.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("API_PORT")), nil))
 
 	return nil
+}
+
+func pingHandle(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != "POST" {
+		return
+	} else {
+
+		// allow CORS here By * or specific origin
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		clientId, err := bufio.NewReader(r.Body).ReadString('\n')
+
+		if err != nil {
+			json.NewEncoder(w).Encode(false)
+			return
+		}
+		clientId = strings.TrimSpace(clientId)
+
+		client, err := clients.GetClientById(clientId)
+
+		if err != nil {
+			json.NewEncoder(w).Encode(false)
+			return
+		}
+
+		ok := client.Ping()
+
+		json.NewEncoder(w).Encode(ok)
+	}
+
+}
+
+func kickHandle(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != "POST" {
+		return
+	} else {
+
+		// allow CORS here By * or specific origin
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		clientId, err := bufio.NewReader(r.Body).ReadString('\n')
+
+		if err != nil {
+			json.NewEncoder(w).Encode(false)
+			return
+		}
+		clientId = strings.TrimSpace(clientId)
+
+		client, err := clients.GetClientById(clientId)
+
+		if err != nil {
+			json.NewEncoder(w).Encode(false)
+			return
+		}
+
+		clients.RemoveClient(*client)
+		json.NewEncoder(w).Encode(true)
+	}
 }
 
 func listHandle(w http.ResponseWriter, r *http.Request) {
