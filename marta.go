@@ -16,7 +16,6 @@ import (
 
 var clients = NewClients()
 var logger *log.Logger
-var out = os.Stdout
 var api *Api = NewApi()
 
 func main() {
@@ -38,45 +37,50 @@ func initLogger() *os.File {
 
 	f, err := os.OpenFile(os.Getenv("LOG_FILE"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		logger.Fatalf("error opening file: %v", err)
+		log.Fatalf("error opening file: %v", err)
 	}
 
-	logger = log.Default()
-
-	logger.SetOutput(f)
+	logger = log.New(f, "", log.Ldate|log.Ltime)
 
 	return f
 }
 
 // Get all info about the clients.
-func info(clientId string) error {
+func info(clientId string) (string, error) {
+
+	out := strings.Builder{}
 
 	if clientId != "" {
 		client, err := clients.GetClientById(clientId)
 
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		client.RequestInfo()
 
-		fmt.Fprintln(out, client.Info.String())
+		out.WriteString(client.Info.String() + "\n")
 	} else {
 		clients.RequestInfo()
 
 		for _, client := range clients.clientsMap {
-			fmt.Fprintln(out, client.Info.String())
+			out.WriteString(client.Info.String() + "\n")
 		}
 	}
 
-	return nil
+	return out.String(), nil
 }
 
 // List all connected clients.
 func list() {
+
+	out := strings.Builder{}
+
 	for _, client := range clients.clientsMap {
-		fmt.Fprintln(out, client.String())
+		out.WriteString(client.String() + "\n")
 	}
+
+	fmt.Print(out.String())
 }
 
 // Kick a client.
@@ -122,7 +126,11 @@ func shell(clientId string) error {
 }
 
 // Ping the client with clientId or if clientId == "", ping all connected clients.
-func ping(clientId string) error {
+// Returns the boolean return value is only true of ALL clients which were pinged, responded
+func ping(clientId string) (string, bool, error) {
+
+	out := strings.Builder{}
+	allOk := true
 
 	// user wants to ping a specific client
 	if len(clientId) == 0 {
@@ -130,9 +138,10 @@ func ping(clientId string) error {
 
 		for client, ok := range oks {
 			if ok {
-				fmt.Fprintf(out, "%s responded.\n", client.String())
+				out.WriteString(fmt.Sprintf("%s responded.\n", client.String()))
 			} else {
-				fmt.Fprintf(out, "%s did not respond or responded the wrong message.\n", client.String())
+				out.WriteString(fmt.Sprintf("%s did not respond or responded the wrong message.\n", client.String()))
+				allOk = false
 			}
 		}
 
@@ -140,19 +149,20 @@ func ping(clientId string) error {
 		client, err := clients.GetClientById(clientId)
 
 		if err != nil {
-			return errors.New("could not ping client: client with that id is not in array")
+			return "", allOk, errors.New("could not ping client: client with that id is not in array")
 		}
 
 		ok := client.Ping()
 
 		if ok {
-			fmt.Fprintf(out, "%s responded.\n", client.String())
+			out.WriteString(fmt.Sprintf("%s responded.\n", client.String()))
 		} else {
-			fmt.Fprintf(out, "%s did not respond or responded the wrong message.\n", client.String())
+			out.WriteString(fmt.Sprintf("%s did not respond or responded the wrong message.\n", client.String()))
+			allOk = false
 		}
 	}
 
-	return nil
+	return out.String(), allOk, nil
 }
 
 func commandLoop() {
@@ -188,9 +198,11 @@ func commandLoop() {
 
 		switch cmd {
 		case "!info":
-			err := info(clientId)
+			out, err := info(clientId)
 			if err != nil {
 				fmt.Println(err)
+			} else {
+				fmt.Print(out)
 			}
 		case "!list":
 			list()
@@ -205,17 +217,14 @@ func commandLoop() {
 				fmt.Println(err)
 			}
 		case "!ping":
-			err := ping(clientId)
+			out, _, err := ping(clientId)
 			if err != nil {
 				fmt.Println(err)
+			} else {
+				fmt.Print(out)
 			}
 		default:
 			fmt.Println("Command is unknown.")
-			// responses := clients.SendWithRes(in)
-
-			// for _, res := range responses {
-			// 	fmt.Println("'" + strings.TrimRight(res, "\n") + "'")
-			// }
 		}
 	}
 }
