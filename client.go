@@ -2,19 +2,19 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net"
+	"os"
+	"strconv"
 	"time"
 )
 
-const timeOutDuration int = 2
-
 type Client struct {
-	Id           string
-	Conn         net.Conn
-	TimeoutCount int
-	Info         ClientInfo
+	Id   string
+	Conn net.Conn
+	Info ClientInfo
 }
 
 // Returns a pointer to an instance of Client.
@@ -42,17 +42,16 @@ func (client *Client) SendWithRes(data string) (string, error) {
 
 	client.Conn.Write([]byte(data))
 
-	// set deadline to in 5 seconds
-	// if client does not respond after 5 seconds, it resumes and the timeout counter get incremented
-	client.Conn.SetReadDeadline(time.Now().Add(time.Duration(timeOutDuration) * time.Second))
-
-	res, err := bufio.NewReader(client.Conn).ReadString('\n')
+	dur, err := strconv.Atoi(os.Getenv("TIMEOUT_DURATION"))
 
 	if err != nil {
-		client.TimeoutCount = client.TimeoutCount + 1
+		logger.Panicln(err)
 	}
 
-	return res, err
+	// set deadline to in `dur` seconds
+	client.Conn.SetReadDeadline(time.Now().Add(time.Duration(dur) * time.Second))
+
+	return bufio.NewReader(client.Conn).ReadString('\n')
 }
 
 // Requests info from client. Updates `Info` and returns it.
@@ -89,6 +88,17 @@ func (client *Client) Equals(other Client) bool {
 // Returns string representation of itsself.
 func (client *Client) String() string {
 	return fmt.Sprintf("Client(Id: %s, Addr: %s)", client.Id, client.Conn.LocalAddr())
+}
+
+// Returns json representation of itsself as string.
+func (client *Client) Json() string {
+	j, err := json.Marshal(client)
+
+	if err != nil {
+		logger.Panicln(err)
+	}
+
+	return string(j)
 }
 
 // Returns a random string with the given length.

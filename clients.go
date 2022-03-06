@@ -5,8 +5,6 @@ import (
 	"sync"
 )
 
-const maxTimeouts int = 2
-
 type Clients struct {
 	clientsMap map[string]Client
 }
@@ -66,6 +64,12 @@ func (clients *Clients) Ping() map[Client]bool {
 		oks[*curr] = curr.Ping()
 	})
 
+	for client, ok := range oks {
+		if !ok {
+			clients.RemoveClient(client)
+		}
+	}
+
 	return oks
 }
 
@@ -86,10 +90,6 @@ func (clients *Clients) Send(data string) {
 }
 
 // Send data to all clients and wait for response.
-//
-// Uses the `Send(string)` method of `Client`. This results in increasing the `TimeoutCount` of a client if it doesnt repond.
-//
-// After the data got sent to a client the method checks if `TimeoutCount` is bigger than `maxTimeouts` and if it is, the client gets removed from `ClientsArray`.
 func (clients *Clients) SendWithRes(data string) []string {
 
 	// array that gatheres all responses
@@ -105,10 +105,7 @@ func (clients *Clients) SendWithRes(data string) []string {
 		res, err := curr.SendWithRes(data)
 
 		if err != nil {
-			// if count is to big append to timedOut slice
-			if curr.TimeoutCount > maxTimeouts {
-				timedOut = append(timedOut, *curr)
-			}
+			timedOut = append(timedOut, *curr)
 		} else {
 			responses = append(responses, string(res))
 		}
