@@ -32,7 +32,7 @@ func (shell *Shell) Start() error {
 	reader := bufio.NewReader(os.Stdin)
 
 	// initialize shell
-	err := shell.init()
+	err := shell.Init()
 
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func (shell *Shell) Close() {
 }
 
 // Finds out the current path on the client and sets it.
-func (shell *Shell) init() error {
+func (shell *Shell) Init() error {
 	res, err := shell.Client.SendWithRes("!initshell\n")
 
 	// client did not respond in time

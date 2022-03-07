@@ -16,12 +16,44 @@ type Message struct {
 	Message string `json:"message"`
 }
 
+type ApiError struct {
+	Message string `json:"message"`
+}
+
+type ListRes struct {
+	Data  []Client `json:"data"`
+	Error ApiError `json:"error"`
+}
+
+type ShellCmdReq struct {
+	ClientId string `json:"clientId"`
+	Command  string `json:"command"`
+}
+
+type ShellCmdRes struct {
+	Data  string   `json:"data"`
+	Error ApiError `json:"error"`
+}
+
+type InitShellReq struct {
+	ClientId string `json:"clientId"`
+}
+
+type InitShellRes struct {
+	Data  bool     `json:"data"`
+	Error ApiError `json:"error"`
+}
+
 var upgrader = websocket.Upgrader{}
 
-type Api struct{}
+type Api struct {
+	activeShells map[string]*Shell
+}
 
 func NewApi() *Api {
-	api := Api{}
+	api := Api{
+		activeShells: map[string]*Shell{},
+	}
 
 	return &api
 }
@@ -36,6 +68,8 @@ func (api *Api) Serve() error {
 	http.HandleFunc("/list", listHandle)
 	http.HandleFunc("/kick", kickHandle)
 	http.HandleFunc("/ping", pingHandle)
+	http.HandleFunc("/initShell", initShellHandle)
+	http.HandleFunc("/shellCmd", shellCmdHandle)
 
 	logger.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("API_PORT")), nil))
 
@@ -106,11 +140,106 @@ func kickHandle(w http.ResponseWriter, r *http.Request) {
 
 func listHandle(w http.ResponseWriter, r *http.Request) {
 
+	listRes := ListRes{
+		Data:  clients.GetAllClients(),
+		Error: ApiError{},
+	}
+
 	// allow CORS here By * or specific origin
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	json.NewEncoder(w).Encode(clients.GetAllClients())
+	json.NewEncoder(w).Encode(listRes)
+}
+
+func initShellHandle(w http.ResponseWriter, r *http.Request) {
+
+	// allow CORS here By * or specific origin
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	req := InitShellReq{}
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		json.NewEncoder(w).Encode(InitShellRes{
+			Data: false,
+			Error: ApiError{
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	client, err := clients.GetClientById(req.ClientId)
+
+	if err != nil {
+		json.NewEncoder(w).Encode(InitShellRes{
+			Data: false,
+			Error: ApiError{
+				Message: "client id does not exist",
+			},
+		})
+		return
+	}
+
+	api.activeShells[client.Id] = NewShell(client)
+
+	json.NewEncoder(w).Encode(InitShellRes{
+		Data:  true,
+		Error: ApiError{},
+	})
+}
+
+func shellCmdHandle(w http.ResponseWriter, r *http.Request) {
+
+	// allow CORS here By * or specific origin
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	req := &ShellCmdReq{}
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		json.NewEncoder(w).Encode(ShellCmdRes{
+			Data: "",
+			Error: ApiError{
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	shell, ok := api.activeShells[req.ClientId]
+
+	if !ok {
+		json.NewEncoder(w).Encode(ShellCmdRes{
+			Data: "",
+			Error: ApiError{
+				Message: "no shell is active to a client with that id",
+			},
+		})
+		return
+	}
+
+	out, err := shell.Exec(req.Command)
+
+	if err != nil {
+		json.NewEncoder(w).Encode(ShellCmdRes{
+			Data: "",
+			Error: ApiError{
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(ShellCmdRes{
+		Data:  string(out),
+		Error: ApiError{},
+	})
 }
 
 func wsHandle(w http.ResponseWriter, r *http.Request) {
