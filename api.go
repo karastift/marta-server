@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -76,11 +75,6 @@ func NewApi() *Api {
 
 func (api *Api) Serve() error {
 
-	// let functions return output and then write it to connection
-	// http endpoint for basic commands
-	// for shell, i can try using websockets
-
-	http.HandleFunc("/ws", wsHandle)
 	http.HandleFunc("/list", listHandle)
 	http.HandleFunc("/kick", kickHandle)
 	http.HandleFunc("/ping", pingHandle)
@@ -282,35 +276,4 @@ func shellCmdHandle(w http.ResponseWriter, r *http.Request) {
 		Data:  string(out),
 		Error: ApiError{},
 	})
-}
-
-func wsHandle(w http.ResponseWriter, r *http.Request) {
-	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-
-	ws, err := upgrader.Upgrade(w, r, nil)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer ws.Close()
-
-	fmt.Println("Connected!")
-
-	for {
-		var message Message
-
-		err := ws.ReadJSON(&message)
-
-		if err != nil {
-			fmt.Printf("error occurred: %v", err)
-			break
-		}
-
-		fmt.Println(message)
-
-		// send message from server
-		if err := ws.WriteJSON(message); !errors.Is(err, nil) {
-			fmt.Printf("error occurred: %v", err)
-		}
-	}
 }
