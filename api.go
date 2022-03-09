@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -40,6 +38,24 @@ type InitShellReq struct {
 }
 
 type InitShellRes struct {
+	Data  bool     `json:"data"`
+	Error ApiError `json:"error"`
+}
+
+type KickReq struct {
+	ClientId string `json:"clientId"`
+}
+
+type KickRes struct {
+	Data  bool     `json:"data"`
+	Error ApiError `json:"error"`
+}
+
+type PingReq struct {
+	ClientId string `json:"clientId"`
+}
+
+type PingRes struct {
 	Data  bool     `json:"data"`
 	Error ApiError `json:"error"`
 }
@@ -78,78 +94,104 @@ func (api *Api) Serve() error {
 
 func pingHandle(w http.ResponseWriter, r *http.Request) {
 
+	// allow CORS here By * or specific origin
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 	if r.Method != "POST" {
 		return
 	} else {
 
-		// allow CORS here By * or specific origin
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		req := PingReq{}
 
-		clientId, err := bufio.NewReader(r.Body).ReadString('\n')
+		err := json.NewDecoder(r.Body).Decode(&req)
 
 		if err != nil {
-			json.NewEncoder(w).Encode(false)
+			json.NewEncoder(w).Encode(PingRes{
+				Data: false,
+				Error: ApiError{
+					Message: err.Error(),
+				},
+			})
 			return
 		}
-		clientId = strings.TrimSpace(clientId)
 
-		client, err := clients.GetClientById(clientId)
+		client, err := clients.GetClientById(req.ClientId)
 
 		if err != nil {
-			json.NewEncoder(w).Encode(false)
+			json.NewEncoder(w).Encode(PingRes{
+				Data: false,
+				Error: ApiError{
+					Message: err.Error(),
+				},
+			})
 			return
 		}
 
 		ok := client.Ping()
 
-		json.NewEncoder(w).Encode(ok)
+		json.NewEncoder(w).Encode(PingRes{
+			Data:  ok,
+			Error: ApiError{},
+		})
 	}
 
 }
 
 func kickHandle(w http.ResponseWriter, r *http.Request) {
 
+	// allow CORS here By * or specific origin
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	if r.Method != "POST" {
 		return
 	} else {
 
-		// allow CORS here By * or specific origin
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		req := KickReq{}
 
-		clientId, err := bufio.NewReader(r.Body).ReadString('\n')
+		err := json.NewDecoder(r.Body).Decode(&req)
 
 		if err != nil {
-			json.NewEncoder(w).Encode(false)
+			json.NewEncoder(w).Encode(KickRes{
+				Data: false,
+				Error: ApiError{
+					Message: err.Error(),
+				},
+			})
 			return
 		}
-		clientId = strings.TrimSpace(clientId)
 
-		client, err := clients.GetClientById(clientId)
+		client, err := clients.GetClientById(req.ClientId)
 
 		if err != nil {
-			json.NewEncoder(w).Encode(false)
+			json.NewEncoder(w).Encode(KickRes{
+				Data: false,
+				Error: ApiError{
+					Message: err.Error(),
+				},
+			})
 			return
 		}
 
 		clients.RemoveClient(*client)
-		json.NewEncoder(w).Encode(true)
+
+		json.NewEncoder(w).Encode(KickRes{
+			Data:  true,
+			Error: ApiError{},
+		})
 	}
 }
 
 func listHandle(w http.ResponseWriter, r *http.Request) {
 
-	listRes := ListRes{
-		Data:  clients.GetAllClients(),
-		Error: ApiError{},
-	}
-
 	// allow CORS here By * or specific origin
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	json.NewEncoder(w).Encode(listRes)
+	json.NewEncoder(w).Encode(ListRes{
+		Data:  clients.GetAllClients(),
+		Error: ApiError{},
+	})
 }
 
 func initShellHandle(w http.ResponseWriter, r *http.Request) {
