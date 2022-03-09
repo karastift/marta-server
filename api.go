@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
-	"github.com/gorilla/websocket"
 )
 
 type Message struct {
@@ -58,8 +56,6 @@ type PingRes struct {
 	Data  bool     `json:"data"`
 	Error ApiError `json:"error"`
 }
-
-var upgrader = websocket.Upgrader{}
 
 type Api struct {
 	activeShells map[string]*Shell
